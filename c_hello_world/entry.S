@@ -9,5 +9,9 @@ mystart:
     mov %ax, %es
     mov %ax, %ss
     mov $__stack_top, %esp
+    mov $0xE57, %ax
+    int $0x10
+    mov $0xE0A, %ax
+    int $0x10
     cld
     call main
