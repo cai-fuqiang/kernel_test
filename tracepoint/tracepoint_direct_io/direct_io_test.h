@@ -151,16 +151,6 @@ DEFINE_EVENT(deb_func_name,  iov_iter_get_pages_ret_res_le_0,
 	TP_ARGS(msg)
 );
 
-
-
-DEFINE_EVENT(deb_iov_iter, bio_iov_loop_deb,
-
-	TP_PROTO(struct iov_iter *iter),
-
-    TP_ARGS(iter),
-
-);
-
 DEFINE_EVENT(bio_iov_deb, bio_iov_deb_beg,
 
 	TP_PROTO(struct iov_iter *iter),
@@ -229,7 +219,7 @@ DECLARE_EVENT_CLASS(bio_deb,
 		  __entry->nr_sector, __entry->comm)
 );
 
-DEFINE_EVENT(bio_deb, bio_deb_loop,
+DEFINE_EVENT(bio_deb, bio_deb_once,
 
 	TP_PROTO(struct bio *bio),
 
@@ -265,6 +255,8 @@ DEFINE_EVENT_CLASS(bio_io_vec_deb,
     
 );
 
+
+//use
 DEFINE_EVENT(bio_io_vec_deb, bio_io_vec_deb_loop,
 
     TP_PROTO(struct bio *bio, int idx),
@@ -304,6 +296,25 @@ DEFINE_EVENT(uvector_deb, uvector_deb_loop,
 
     TP_ARGS(iov)
 );
+
+DEFINE_EVENT(bio_msg_deb, bio_msg_deb_add,
+    
+    TP_PROTO(char *msg),
+
+	TP_ARGS(msg)
+
+);
+
+
+DEFINE_EVENT(bio_msg_deb, bio_msg_deb_merge,
+    
+    TP_PROTO(char *msg),
+
+	TP_ARGS(msg)
+
+);
+
+
 
 #endif
 

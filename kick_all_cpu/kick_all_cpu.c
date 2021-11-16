@@ -2,29 +2,27 @@
 #include <linux/proc_fs.h>
 #include <linux/init.h>
 #include <linux/uaccess.h>
+#include <linux/smp.h>
 
-#define NODE "benshushu/my_proc"
-static int param = 100;
+#define NODE "kick_all_cpu_test/kick"
+int count = 0;
 static struct proc_dir_entry *my_proc;
 static struct proc_dir_entry *my_root;
 #define KS 3213
-static char kstring[KS];        /* should be less sloppy about overflows :) */
+static char kstring[KS] = "";        /* should be less sloppy about overflows :) */
 
 
 static ssize_t my_read(struct file *file, char __user *buf, size_t lbuf, loff_t *ppos)
 {
-       int nbytes = sprintf(kstring, "%d\n", param);
+       int nbytes = sprintf(kstring, "%d\n", count);
        return simple_read_from_buffer(buf, lbuf, ppos, kstring, nbytes);
 }
 
 static ssize_t my_write(struct file *file, const char __user *buf, size_t lbuf,
 			loff_t *ppos)
 {
-        ssize_t rc;
-        rc = simple_write_to_buffer(kstring, lbuf, ppos, buf, lbuf);
-        sscanf(kstring, "%d", &param);
-        pr_info("param has been set to %d\n", param);
-        return rc;
+        kick_all_cpus_sync();
+        return lbuf;
 }
 
 static const struct file_operations my_proc_fops = {
@@ -36,7 +34,7 @@ static const struct file_operations my_proc_fops = {
 static int __init my_init(void)
 {
     pr_info("inter the init\n");
-    my_root = proc_mkdir("benshushu", NULL);
+    my_root = proc_mkdir("kick_all_cpu_test", NULL);
     if (IS_ERR(my_root)) {
         pr_err("failed create the proc root dir\n");
         return -1;
@@ -51,8 +49,9 @@ static int __init my_init(void)
 }
 static void __exit my_exit(void)
 {
-    proc_remove(my_proc);
     pr_info("inter the exit\n");
+    proc_remove(my_proc);
+    proc_remove(my_root);
     return;
 }
 module_init(my_init);
