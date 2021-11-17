@@ -1,7 +1,7 @@
 ENTRY(mystart)
 SECTIONS
 {
-  . = 0x8c00;
+  . = 0x7c00;
   .text : {
     entry.o(.text)
     *(.text)

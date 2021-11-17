@@ -2,8 +2,8 @@
 .text
 .global mystart
 mystart:
-#    ljmp $0, $.setcs
-#.setcs:
+    ljmp $0, $.setcs
+.setcs:
     xor %ax, %ax
     mov %ax, %ds
     mov %ax, %es
