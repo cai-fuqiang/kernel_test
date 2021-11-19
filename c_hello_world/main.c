@@ -1,5 +1,5 @@
 
-
+#if 0
 int print_ip(int ip)
 {
 	int tmp = 0;
@@ -28,12 +28,13 @@ int print_ip(int ip)
 
 	return j;
 }
+#endif
 
 void main(void) {
     int i;
     int ip;
     char s[] = {'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'};
-
+#if 0
     __asm__("call NEXT\n\t"
     "NEXT:\n\t"
     "pop %%ax"
@@ -41,6 +42,7 @@ void main(void) {
 
     i = print_ip(ip);
     print_ip(i);
+#endif
     for (i = 0; i < sizeof(s); ++i) {
         __asm__ (
             "int $0x10" : : "a" ((0x0e << 8) | s[i])

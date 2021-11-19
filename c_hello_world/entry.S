@@ -1,5 +1,4 @@
 .code16
-.text
 .global mystart
 mystart:
     ljmp $0, $.setcs
@@ -8,11 +7,10 @@ mystart:
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %ss
-    mov $0x8c00, %esp
-    mov $0xE57, %ax
-    int $0x10
-    mov $0xE0A, %ax
-    int $0x10
+    mov $__stack_top, %esp
+    mov $0xb800, %ax
+    mov %ax, %es
+    movb $'W', %es:0 
+    movb $0x7c, %es:1
     cld
     call main
-# mov $__stack_top, %esp
