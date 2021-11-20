@@ -1,4 +1,5 @@
 .code16
+.section ".stage1", "ax"
 .global mystart
 mystart:
     ljmp $0, $.setcs
