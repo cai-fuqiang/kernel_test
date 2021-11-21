@@ -8,10 +8,56 @@ mystart:
     mov %ax, %ds
     mov %ax, %es
     mov %ax, %ss
-    mov $__stack_top, %esp
+    mov $__stage1_stack_top, %esp
+
+    cld
+    /*
     mov $0xb800, %ax
     mov %ax, %es
     movb $'W', %es:0 
     movb $0x7c, %es:1
-    cld
-    call main
+    movb $'A', %es:2
+    movb $0x7c, %es:3
+    */
+
+	/*set read sector num */
+	mov $1, %al
+	mov $0x1f2, %dx 
+	out %al, %dx
+
+	/* set sector index */
+	mov $0x1f3, %dx
+	mov $2, %al
+	out %al, %dx
+
+	mov $0x1f4, %dx
+	mov $0, %al
+	out %al, %dx
+
+	mov $0x1f5, %dx
+	out %al, %dx
+
+	mov $0x1f6, %dx
+	mov $0xe0, %al
+	out %al, %dx
+	/* set read  area */
+	mov $__stage2_text_beg, %ax
+	mov %ax, %ds
+	mov $0, %bx
+
+	/* send read cmd */
+	mov $0x1f7, %dx
+	mov $0x20, %al
+	out %al, %dx
+
+	mov $0, %bx
+.waits:
+	/* at this ,well need wait a moment, see %bx */
+	inc %bx
+	in %dx, %ax
+	andb $0x88, %al
+	cmpb $0x8, %al
+	jnz .waits
+.read_next:
+	in %dx, %ax
+	ljmp $0, $.read_next
