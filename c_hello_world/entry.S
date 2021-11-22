@@ -27,7 +27,7 @@ mystart:
 
 	/* set sector index */
 	mov $0x1f3, %dx
-	mov $2, %al
+	mov $1, %al
 	out %al, %dx
 
 	mov $0x1f4, %dx
@@ -41,10 +41,6 @@ mystart:
 	mov $0xe0, %al
 	out %al, %dx
 	/* set read  area */
-	mov $__stage2_text_beg, %ax
-	mov %ax, %ds
-	mov $0, %bx
-
 	/* send read cmd */
 	mov $0x1f7, %dx
 	mov $0x20, %al
@@ -58,6 +54,20 @@ mystart:
 	andb $0x88, %al
 	cmpb $0x8, %al
 	jnz .waits
+
+	/* read disk data to memory */
+	mov $0x1f0, %dx
+
+	mov $__stage2_text_beg, %bx
+	mov %bx, %cx
+	add $512, %cx
 .read_next:
 	in %dx, %ax
-	ljmp $0, $.read_next
+	movw %ax, (%bx)
+	add $2, %bx
+	cmpw %cx, %bx
+	jnz .read_next
+
+.read_done:
+	add $0, %bx
+	jmp $0, $.read_done
