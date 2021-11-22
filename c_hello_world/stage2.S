@@ -5,5 +5,9 @@
     mov %ax, %es
     movb $'W', %es:0 
     movb $0x8c, %es:1
+    movb $'F', %es:2
+    movb $0x8c, %es:3
+    movb $'Q', %es:4
+    movb $0x8c, %es:5
     cld
     call main
