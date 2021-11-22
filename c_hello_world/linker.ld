@@ -36,7 +36,9 @@ SECTIONS
   }
   __stage2_text_end = .;
   . = 0x8000;
-  /* for img over 1M */
+  /* 
+   * for img over 1M , if img disk not over  1M, ide read op may be false.
+   */
   .end_data :
   {
     SHORT(0x0);
