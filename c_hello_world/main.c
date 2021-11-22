@@ -1,53 +1,31 @@
 
-#if 0
-int print_ip(int ip)
+void print_str(char *str, int len)
 {
-	int tmp = 0;
-	int i = 0;
-	int j = 0;
-	char v = 0;
-	char buf[16] = {0};
-
-	tmp = ip;
-
-	buf[i++] = '\n';
-
-	do {
-		v = tmp % 10 + '0';
-		buf[i] = v;
-		tmp = tmp / 10;
-		i++;
-	}while(tmp != 0);
-	j = i;
-	while(i >= 0) {
-        	__asm__ (
-        	    "int $0x10" : : "a" ((0x0e << 8) | buf[i])
-        	);
-		i--;
-	}
-
-	return j;
+    int i;
+    for (i = 0; i < len; i++)
+    {
+        if (i != len) {
+            __asm__ (
+                "int $0x10" : : "a" ((0x0e << 8) | str[i])
+            );
+        } else {
+            __asm__ (
+                "int $0x10" : : "a" ((0x0e << 8) | '\0')
+            );
+        }
+    }
+    return ;
 }
-#endif
 
 void main(void) {
     int i;
     int ip;
-    char s[] = {'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'};
-#if 0
-    __asm__("call NEXT\n\t"
-    "NEXT:\n\t"
-    "pop %%ax"
-    : "=a"(ip));
+    char s_enter_main[] = "enter main .... \r\n";
+    char s_hello_world[] = "hello world \r\n";
 
-    i = print_ip(ip);
-    print_ip(i);
-#endif
-    for (i = 0; i < sizeof(s); ++i) {
-        __asm__ (
-            "int $0x10" : : "a" ((0x0e << 8) | s[i])
-        );
-    }
+    print_str(s_enter_main, sizeof(s_enter_main) - 1);
+    print_str(s_hello_world, sizeof(s_hello_world) - 1);
+
     while (1) {
         __asm__ ("hlt");
     };
