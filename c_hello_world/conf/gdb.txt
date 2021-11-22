@@ -1,0 +1,2 @@
+set tdesc filename conf/gdb-xml/target_i386_64.xml
+set architecture i386:x86-64

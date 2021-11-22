@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
+RUN_MODE=$1
 set -eux
 as -ggdb3 --32 -o entry.o entry.S
 as -ggdb3 --32 -o stage2.o stage2.S
 gcc -c -ggdb3 -m16 -ffreestanding -fno-PIE -nostartfiles -nostdlib -o main.o -std=c99 main.c
 ld -m elf_i386 -o main.elf -T linker.ld entry.o main.o stage2.o
 objcopy -O binary main.elf main.img
-#/usr/libexec/qemu-kvm -cpu host -drive file=main.img,format=raw 
-qemu-system-x86_64 -drive file=main.img,format=raw
+
+if [ "$RUN_MODE" ==  "debug" ];then
+/usr/libexec/qemu-kvm -cpu host -drive file=main.img,format=raw  -monitor stdio -s -S
+else
+/usr/libexec/qemu-kvm -cpu host -drive file=main.img,format=raw  -monitor stdio
+fi
+#qemu-system-x86_64 -drive file=main.img,format=raw
 #qemu-system-i386 -drive file=main.img,format=raw -S -s

@@ -1,2 +1,0 @@
-set tdesc filename target_i386_64.xml
-set architecture i386:x86-64

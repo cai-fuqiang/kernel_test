@@ -23,7 +23,6 @@ SECTIONS
     stage2.o(.stage2)
     *(.stage2)
   }
-  . = 0x8000;
   .text :
   {
     *(.text)
@@ -36,6 +35,12 @@ SECTIONS
     *(COMMON)
   }
   __stage2_text_end = .;
+  . = 0x8000;
+  /* for img over 1M */
+  .end_data :
+  {
+    SHORT(0x0);
+  }
   /DISCARD/ : {
     *(.eh_frame)
   }

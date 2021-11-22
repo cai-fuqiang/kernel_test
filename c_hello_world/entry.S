@@ -69,5 +69,4 @@ mystart:
 	jnz .read_next
 
 .read_done:
-	add $0, %bx
-	jmp $0, $.read_done
+    jmp $0, $__stage2_text_beg
