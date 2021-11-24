@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
+# SYSTEM 1:ubuntu 2:centos
+set -xeu
+SYSTEM=1
+
+if [ $SYSTEM -eq 1 ];then
+	QEMU_CMD="qemu-system-x86_64"
+elif [ $SYSTEM -eq 2 ];then
+	QEMU_CMD="/usr/libexec/qemu-kvm"
+fi
 RUN_MODE=$1
-set -eux
+
 as -ggdb3 --32 -o entry.o entry.S
 as -ggdb3 --32 -o startup_32.o startup_32.S
 gcc -c -ggdb3 -m16 -ffreestanding -fno-PIE -nostartfiles -nostdlib -o main.o -std=c99 main.c
@@ -9,9 +18,9 @@ ld -m elf_i386 -o main.elf -T linker.ld entry.o main.o main_32.o startup_32.o
 objcopy -O binary main.elf main.img
 
 if [ "$RUN_MODE" ==  "debug" ];then
-/usr/libexec/qemu-kvm -cpu host -drive file=main.img,format=raw  -monitor stdio -s -S
+${QEMU_CMD}  -drive file=main.img,format=raw  -monitor stdio -s -S
 else
-/usr/libexec/qemu-kvm -cpu host -drive file=main.img,format=raw  -monitor stdio
+${QEMU_CMD} -drive file=main.img,format=raw  -monitor stdio
 fi
 #qemu-system-x86_64 -drive file=main.img,format=raw
 #qemu-system-i386 -drive file=main.img,format=raw -S -s

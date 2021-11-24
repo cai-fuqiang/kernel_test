@@ -21,7 +21,7 @@
     movb $0x8c, %es:5
     mov $__stage2_stack_top, %esp
     cld
-	mov $24, %eax
+	mov $0x20, %eax
 
 	mov %eax, %ds
 	mov %eax, %ss
@@ -29,12 +29,12 @@
     lgdt gdt_desc
     mov $1, %eax
     mov %eax, %cr0
-    ljmp $0, $.startup_prot
+    ljmp $0x10, $.startup_prot
 
-.code32
 .startup_prot:
-    hlt
-    hlt
+startup_prot:
+	test %eax, %eax
+	je startup_prot
 
 .section .gdt_table
 gdt_desc:
