@@ -25,11 +25,16 @@
 
 	mov %eax, %ds
 	mov %eax, %ss
-	mov %eax, %ds
+	mov %eax, %es
     lgdt gdt_desc
-lgdt_end:
-    cmp %eax, %eax
-    je lgdt_end
+    mov $1, %eax
+    mov %eax, %cr0
+    ljmp $0, $.startup_prot
+
+.code32
+.startup_prot:
+    hlt
+    hlt
 
 .section .gdt_table
 gdt_desc:
