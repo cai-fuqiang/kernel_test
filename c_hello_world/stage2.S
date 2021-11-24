@@ -9,5 +9,6 @@
     movb $0x8c, %es:3
     movb $'Q', %es:4
     movb $0x8c, %es:5
+    mov $__stage2_stack_top, %esp
     cld
     call main

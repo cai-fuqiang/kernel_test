@@ -1,8 +1,44 @@
-.code 32
-.section data
-gdt:
-    .word gdt_end - gdt
-    .long gdt
+
+#define GDT_ENTRY_BOOT_CS_32    1
+#define GDT_ENTRY_BOOT_DS       3
+
+#define __BOOT_ENTRY(_index)    (_index * 8)
+
+#define __BOOT_CS_32            __BOOT_ENTRY(GDT_ENTRY_BOOT_CS_32)
+#define __BOOT_DS               (3 * 8)
+
+.code16
+.section .text
+.global startup_32
+.startup_32:
+    mov $0xb800, %ax
+    mov %ax, %es
+    movb $'W', %es:0 
+    movb $0x8c, %es:1
+    movb $'F', %es:2
+    movb $0x8c, %es:3
+    movb $'Q', %es:4
+    movb $0x8c, %es:5
+    mov $__stage2_stack_top, %esp
+    cld
+	mov $24, %eax
+
+	mov %eax, %ds
+	mov %eax, %ss
+	mov %eax, %ds
+    lgdt gdt_desc
+lgdt_end:
+    cmp %eax, %eax
+    je lgdt_end
+
+.section .gdt_table
+gdt_desc:
+    .word gdt_end - gdt_t
+    .long gdt_t
+
+gdt_t:
+    .quad 0x0000000000000000
+    .quad 0x0000000000000000
     /* eight-byte integer */
     /* see https://www.sourceware.org/binutils/docs-2.12/as.info/Index.html#Index */
     /*
@@ -39,5 +75,3 @@ gdt:
     .quad   0x0080890000000000  /* TS descriptor */
     .quad   0x0000000000000000  /* TS continued */
 gdt_end:
-
-

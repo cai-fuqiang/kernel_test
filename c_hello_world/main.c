@@ -1,21 +1,5 @@
-
-void print_str(char *str, int len)
-{
-    int i;
-    for (i = 0; i < len; i++)
-    {
-        if (i != len) {
-            __asm__ (
-                "int $0x10" : : "a" ((0x0e << 8) | str[i])
-            );
-        } else {
-            __asm__ (
-                "int $0x10" : : "a" ((0x0e << 8) | '\0')
-            );
-        }
-    }
-    return ;
-}
+#include "tools.h"
+extern void main_32();
 
 void main(void) {
     int i;
@@ -26,7 +10,7 @@ void main(void) {
     print_str(s_enter_main, sizeof(s_enter_main) - 1);
     print_str(s_hello_world, sizeof(s_hello_world) - 1);
 
-    while (1) {
-        __asm__ ("hlt");
-    };
+    __asm__ ("callw __start_32_entry\n\t");
+
+    return ;
 }

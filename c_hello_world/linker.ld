@@ -20,11 +20,19 @@ SECTIONS
   __stage2_text_beg = .;
   .stage2 : 
   {
-    stage2.o(.stage2)
-    *(.stage2)
+    startup_32.o(.text)
+    __gdt_table_base = .;
+    startup_32.o(.gdt_table)
+    main.o(.text)
+    main.o(.data)
+    main.o(.rodata)
+    main.o(.bss)
+    main.o(COMMON)
   }
   .text :
   {
+    __start_32_entry = .;
+    *(.start_32_session)
     *(.text)
     *(.data)
     *(.rodata)
@@ -36,6 +44,9 @@ SECTIONS
   }
   __stage2_text_end = .;
   . = 0x8000;
+  __stage2_stack_bottom = .;
+  . = . + 0x2000;
+  __stage2_stack_top = .;
   /* 
    * for img over 1M , if img disk not over  1M, ide read op may be false.
    */
