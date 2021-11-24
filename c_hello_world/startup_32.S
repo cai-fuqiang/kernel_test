@@ -26,7 +26,7 @@
 	mov %eax, %ds
 	mov %eax, %ss
 	mov %eax, %es
-    lgdt gdt_desc
+    lgdt %cs:gdt_desc
     mov $1, %eax
     mov %eax, %cr0
     ljmp $0x10, $.startup_prot
