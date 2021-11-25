@@ -23,11 +23,11 @@ SECTIONS
     startup_32.o(.text)
     __gdt_table_base = .;
     startup_32.o(.gdt_table)
-    main.o(.text)
-    main.o(.data)
-    main.o(.rodata)
-    main.o(.bss)
-    main.o(COMMON)
+    /*main.o(.text) */
+    /*main.o(.data) */
+    /*main.o(.rodata) */
+    /*main.o(.bss) */
+    /*main.o(COMMON) */
   }
   .text :
   {

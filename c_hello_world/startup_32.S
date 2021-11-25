@@ -21,25 +21,35 @@
     movb $0x8c, %es:5
     mov $__stage2_stack_top, %esp
     cld
-	mov $0x20, %eax
 
-	mov %eax, %ds
-	mov %eax, %ss
-	mov %eax, %es
+    /* here load is load for this real mode */
+    /* is not efect to follow prot mode */
+    /* so this code should delete */
+    /*
+    mov $0x28, %eax
+    mov %eax, %ds
+    mov %eax, %ss
+    mov %eax, %es
+    */
+
     lgdt %cs:gdt_desc
     mov $1, %eax
     mov %eax, %cr0
     ljmp $0x10, $.startup_prot
 
+.code32
+.global main_32
 .startup_prot:
 startup_prot:
-	test %eax, %eax
-	je startup_prot
+    /* re-load again */
+    mov $0x28, %eax
+    jmp main_32
 
 .section .gdt_table
 gdt_desc:
     .word gdt_end - gdt_t
     .long gdt_t
+    
 
 gdt_t:
     .quad 0x0000000000000000
@@ -65,6 +75,7 @@ gdt_t:
      * [24-31]  {0}     base 31:24
      */
     .quad 0x00cf9a000000ffff        /* KERNEL 32 CS */
+    .quad 0x00cf92000000ffff  /* KERNEL DS */
     /*
      * high 32 
      * [21]     1       64-bit code segment (IA-32e mode only)
@@ -76,7 +87,7 @@ gdt_t:
     /*
      * [8-11]   (0010)      type:data read/write
      */
-    .quad 0x00cf92000000ffff        /* KERNEL DS */
+    .quad   0x00cf92000000ffff  /* KERNEL DS */
     .quad   0x0080890000000000  /* TS descriptor */
     .quad   0x0000000000000000  /* TS continued */
 gdt_end:

@@ -12,9 +12,10 @@ RUN_MODE=$1
 
 as -ggdb3 --32 -o entry.o entry.S
 as -ggdb3 --32 -o startup_32.o startup_32.S
-gcc -c -ggdb3 -m16 -ffreestanding -fno-PIE -nostartfiles -nostdlib -o main.o -std=c99 main.c
+#gcc -c -ggdb3 -m16 -ffreestanding -fno-PIE -nostartfiles -nostdlib -o main.o -std=c99 main.c
 gcc -c -ggdb3 -m32 -ffreestanding -fno-PIE -nostartfiles -nostdlib -o main_32.o -std=c99 main_32.c
-ld -m elf_i386 -o main.elf -T linker.ld entry.o main.o main_32.o startup_32.o
+#ld -m elf_i386 -o main.elf -T linker.ld entry.o main.o main_32.o startup_32.o
+ld -m elf_i386 -o main.elf -T linker.ld entry.o main_32.o startup_32.o
 objcopy -O binary main.elf main.img
 
 if [ "$RUN_MODE" ==  "debug" ];then

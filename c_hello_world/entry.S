@@ -60,7 +60,7 @@ mystart:
 
 	mov $__stage2_text_beg, %bx
 	mov %bx, %cx
-	add $512, %cx
+	add $1024, %cx
 .read_next:
 	in %dx, %ax
 	movw %ax, (%bx)
