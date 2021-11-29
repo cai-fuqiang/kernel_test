@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SYSTEM 1:ubuntu 2:centos
 set -xeu
-SYSTEM=1
+SYSTEM=2
 
 if [ $SYSTEM -eq 1 ];then
 	QEMU_CMD="qemu-system-x86_64"
