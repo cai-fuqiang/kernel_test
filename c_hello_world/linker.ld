@@ -47,6 +47,9 @@ SECTIONS
   __stage2_stack_bottom = .;
   . = . + 0x2000;
   __stage2_stack_top = .;
+  .pgtable : {
+    startup_32.o(.pgtable)
+  }
   /* 
    * for img over 1M , if img disk not over  1M, ide read op may be false.
    */

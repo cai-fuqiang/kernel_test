@@ -1,3 +1,4 @@
+#include "head.h"
 
 #define GDT_ENTRY_BOOT_CS_32    1
 #define GDT_ENTRY_BOOT_DS       3
@@ -43,6 +44,33 @@
 startup_prot:
     /* re-load again */
     mov $0x28, %eax
+    mov %eax, %ds
+    mov %eax, %ss
+    mov %eax, %es
+
+    /*
+     * in kernel, ebx is kernel load phy address, in this case,
+     * need to 0
+     */
+    xorl %ebx, %ebx
+    xorl %edx, %edx
+	/* 
+	 *Table 4-14. Format of a 4-Level PML4 Entry (PML4E) that 
+     * References a Page-Directory-Pointer Table 
+     */
+	/* Initialize Page tables to 0 */
+	leal    pgtable(%ebx), %edi
+	xorl    %eax, %eax
+	movl    $(6 * 4096 / 4), %ecx
+	/* fill ecs doublewords at ES:[EDI] with EAX */
+	rep stosl
+
+	/* Build Level 4 */
+	leal    pgtable + 0(%ebx), %edi
+	leal    0x1007(%edi), %eax
+	movl    %eax, 0(%edi)
+	addl    %edx, 4(%edi)
+
     jmp main_32
 
 .section .gdt_table
@@ -91,3 +119,8 @@ gdt_t:
     .quad   0x0080890000000000  /* TS descriptor */
     .quad   0x0000000000000000  /* TS continued */
 gdt_end:
+
+    .section ".pgtable","a",@nobits
+    .balign 4096
+pgtable:
+    .fill (17 * 4096), 1, 0
