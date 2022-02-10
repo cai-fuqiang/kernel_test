@@ -17,10 +17,23 @@ static ssize_t my_read(struct file *file, char __user *buf, size_t lbuf, loff_t 
        return simple_read_from_buffer(buf, lbuf, ppos, kstring, nbytes);
 }
 
+int add_num(int a, int b)
+{
+	int i = 0;
+	for (i = 0; i < 100; i++){
+		a++;
+		b++;
+	}
+	return a + b;
+}
+
 static ssize_t my_write(struct file *file, const char __user *buf, size_t lbuf,
 			loff_t *ppos)
 {
         ssize_t rc;
+	int a = 100;
+	int b = 200;
+	add_num(a + b, a / b);
         rc = simple_write_to_buffer(kstring, lbuf, ppos, buf, lbuf);
         sscanf(kstring, "%d", &param);
         pr_info("param has been set to %d\n", param);
