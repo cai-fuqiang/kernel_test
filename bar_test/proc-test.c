@@ -4,7 +4,7 @@
 #include <linux/uaccess.h>
 #include <linux/mm.h>
 #include <asm/pgtable.h>
-
+#include <asm/tlbflush.h>
 #define NODE "benshushu/my_proc"
 static int param = 100;
 static struct proc_dir_entry *my_proc;
@@ -70,6 +70,7 @@ static int __init my_init(void)
     int i = 0;
 
     unsigned long *pte_data_ptr;
+    unsigned long long data;
     pr_info("inter the init\n");
     printk("the my_buf ptr is %llx \n", my_buf);
     printk("the align my_buf ptr align is %lx \n", bufptr_align);
@@ -103,20 +104,37 @@ static int __init my_init(void)
     printk("the pte_high flag is %lx\n", pte_high_flag);
 
     pte_data = pte_high_flag | pte_low_flag | 0xc0100000;
+
     printk("the pte_data is  %lx\n", pte_data);
+    printk("the pte_data_ptr is  %lx\n", pte_data_ptr);
+
+    pte_data_ptr =  (unsigned long *)bufptr_align;
+
+
+    printk("BEFORE:\n");
+    for (i = 0; i < 10; i++) {
+        printk("the pte_data_ptr data is  %lx\n", *pte_data_ptr);
+        pte_data_ptr++;
+    }
 
     pte->pte = pte_data;
+    __flush_tlb_all();
 
-    printk("the pte_data is  %lx\n", pte_data);
+    printk("the pte is %lx\n", pte->pte);
+
+    printk("AFTER:\n");
+
     pte_data_ptr =  (unsigned long *)bufptr_align;
-    printk("the pte_data_ptr is  %lx\n", pte_data_ptr);
     for (i = 0; i < 10; i++) {
-        printk("the pte_data_ptr data is  %llx\n", *pte_data_ptr);
+        data =  *pte_data_ptr;
+        printk("[%d]the pte_data_ptr is  %lx\n", i, pte_data_ptr);
+        printk("[%d]the pte_data_ptr data is  %lx\n", i, data);
         pte_data_ptr++;
     }
     pte->pte = pte_data_org;
+    __flush_tlb_all();
     //printk("the pte_data_ptr is %lx\n", *pte_data_ptr);
-   // printk("pte_high_flag is %lx\n", pte_high_flag);
+    //printk("pte_high_flag is %lx\n", pte_high_flag);
     //my_root = proc_mkdir("benshushu", NULL);
     //if (IS_ERR(my_root)) {
     //    pr_err("failed create the proc root dir\n");
