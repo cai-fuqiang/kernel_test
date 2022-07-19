@@ -1,4 +1,4 @@
-BASEINCLUDE 	?= /usr/src/kernels/4.18.0-240.1.1.el8_3.x86_64/
+BASEINCLUDE 	?= /usr/src/kernels/$(shell  uname -r)/
 proctest-objs 	:= kprobe_test.o
 obj-m			:= kprobe_test.o
 

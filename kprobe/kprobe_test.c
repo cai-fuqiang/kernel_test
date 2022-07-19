@@ -14,104 +14,68 @@
 #include <linux/module.h>
 #include <linux/kprobes.h>
 
-#define MAX_SYMBOL_LEN	64
-static char symbol[MAX_SYMBOL_LEN] = "_do_fork";
-module_param_string(symbol, symbol, sizeof(symbol), 0644);
+#define TEST 1
 
-/* For each probe you need to allocate a kprobe structure */
-static struct kprobe kp = {
-	.symbol_name	= symbol,
-};
+static int is_machine_kexec = 0;
 
-/* kprobe pre_handler: called just before the probed instruction is executed */
-static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+static int handler_pre_ext_machine_kexec(struct kprobe *p, struct pt_regs *regs)
 {
-    struct task_struct *cur_current = current;
-#ifdef CONFIG_X86
-	pr_info("the current is %s\n",cur_current->comm);
-	pr_info("<%s> pre_handler: p->addr = 0x%p, ip = %lx, flags = 0x%lx\n",
-		p->symbol_name, p->addr, regs->ip, regs->flags);
-#endif
-#ifdef CONFIG_PPC
-	pr_info("<%s> pre_handler: p->addr = 0x%p, nip = 0x%lx, msr = 0x%lx\n",
-		p->symbol_name, p->addr, regs->nip, regs->msr);
-#endif
-#ifdef CONFIG_MIPS
-	pr_info("<%s> pre_handler: p->addr = 0x%p, epc = 0x%lx, status = 0x%lx\n",
-		p->symbol_name, p->addr, regs->cp0_epc, regs->cp0_status);
-#endif
-#ifdef CONFIG_ARM64
-	pr_info("<%s> pre_handler: p->addr = 0x%p, pc = 0x%lx,"
-			" pstate = 0x%lx\n",
-		p->symbol_name, p->addr, (long)regs->pc, (long)regs->pstate);
-#endif
-#ifdef CONFIG_S390
-	pr_info("<%s> pre_handler: p->addr, 0x%p, ip = 0x%lx, flags = 0x%lx\n",
-		p->symbol_name, p->addr, regs->psw.addr, regs->flags);
-#endif
-
-	/* A dump_stack() here will give a stack backtrace */
+	is_machine_kexec = 1;
 	return 0;
 }
 
-/* kprobe post_handler: called after the probed instruction is executed */
-static void handler_post(struct kprobe *p, struct pt_regs *regs,
-				unsigned long flags)
+static int handler_post_ext_machine_kexec(struct kprobe *p, struct pt_regs *regs,
+						unsigned long flags)
 {
-#ifdef CONFIG_X86
-	pr_info("<%s> post_handler: p->addr = 0x%p, flags = 0x%lx\n",
-		p->symbol_name, p->addr, regs->flags);
-#endif
-#ifdef CONFIG_PPC
-	pr_info("<%s> post_handler: p->addr = 0x%p, msr = 0x%lx\n",
-		p->symbol_name, p->addr, regs->msr);
-#endif
-#ifdef CONFIG_MIPS
-	pr_info("<%s> post_handler: p->addr = 0x%p, status = 0x%lx\n",
-		p->symbol_name, p->addr, regs->cp0_status);
-#endif
-#ifdef CONFIG_ARM64
-	pr_info("<%s> post_handler: p->addr = 0x%p, pstate = 0x%lx\n",
-		p->symbol_name, p->addr, (long)regs->pstate);
-#endif
-#ifdef CONFIG_S390
-	pr_info("<%s> pre_handler: p->addr, 0x%p, flags = 0x%lx\n",
-		p->symbol_name, p->addr, regs->flags);
-#endif
-}
-
-/*
- * fault_handler: this is called if an exception is generated for any
- * instruction within the pre- or post-handler, or when Kprobes
- * single-steps the probed instruction.
- */
-static int handler_fault(struct kprobe *p, struct pt_regs *regs, int trapnr)
-{
-	pr_info("fault_handler: p->addr = 0x%p, trap #%dn", p->addr, trapnr);
-	/* Return 0 because we don't handle the fault. */
+	printk("the is_machine_kexec is %d\n", is_machine_kexec);
+	//is_machine_kexec = 0;
 	return 0;
 }
 
+static int handler_fault_ext_machine_kexec(struct kprobe *p, struct pt_regs *regs,
+						int  trapnr)
+{
+	return 0;
+}
+#include "handler_ext_condition_module.h"
+#include "handler_ext_none_module.h"
+DEF_EXT_CONDITION_HANDLE(__flush_dcache_area, is_machine_kexec)
+DEF_EXT_CONDITION_HANDLE(flush_icache_range, is_machine_kexec)
+#ifdef TEST
+DEF_EXT_NONE_HANDLE(kvm_vm_ioctl)
+#endif
+
+#include "handler_module.h"
+
+DEF_KP_OBJ(machine_kexec)
+DEF_KP_OBJ(__flush_dcache_area)
+DEF_KP_OBJ(flush_icache_range)
+
+#ifdef TEST
+DEF_KP_OBJ(kvm_vm_ioctl)
+#endif
 static int __init kprobe_init(void)
 {
-	int ret;
-	kp.pre_handler = handler_pre;
-	kp.post_handler = handler_post;
-	kp.fault_handler = handler_fault;
-
-	ret = register_kprobe(&kp);
-	if (ret < 0) {
-		pr_err("register_kprobe failed, returned %d\n", ret);
-		return ret;
-	}
-	pr_info("Planted kprobe at %p\n", kp.addr);
+	register_kprobe_obj(machine_kexec);
+	register_kprobe_obj(__flush_dcache_area);
+	register_kprobe_obj(flush_icache_range);
+#ifdef TEST
+	register_kprobe_obj(kvm_vm_ioctl);
+#endif
 	return 0;
+err:
+	return -1;
 }
 
 static void __exit kprobe_exit(void)
 {
-	unregister_kprobe(&kp);
-	pr_info("kprobe at %p unregistered\n", kp.addr);
+	unregister_kprobe_obj(machine_kexec);
+	unregister_kprobe_obj(__flush_dcache_area);
+	unregister_kprobe_obj(flush_icache_range);
+#ifdef TEST
+	unregister_kprobe_obj(kvm_vm_ioctl);
+#endif
+	return;
 }
 
 module_init(kprobe_init)
