@@ -1,5 +1,10 @@
 EXEC_OBJ 	:= spinlock_pause spinlock_nopause clean_exec_num
 cflags		:= -DNEED_EXEC_NUM=$(NEED_EXEC_NUM)
+
+ifeq ($(XCHG_BEG), 1)
+cflags		+= -DCHG_BEG
+endif
+
 all: $(EXEC_OBJ)
 
 LIB_O	:= shm.o

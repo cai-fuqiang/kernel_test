@@ -10,16 +10,23 @@ unsigned long *exec_proc = NULL;
 int get_lock()
 {
 	__asm__(
+#ifndef XCHG_BEG
 	"Spin_Lock: \n"
 	"cmpq $0, %[global_lock] \n"
 	"je  Get_Lock \n"
 	FILL_INST "\n"
 	"jmp Spin_Lock \n"
 	"Get_Lock: \n"
-	FILL_INST "\n"
+#endif
+#ifdef XCHG_BEG
+        "Spin_Lock: \n"
+#endif
 	"mov $1, %%rax \n"
 	"xchg %%rax, %[global_lock] \n" //, %[locked_val] \n"
 	"cmp $0, %%rax\n"
+#ifdef XCHG_BEG
+	FILL_INST "\n"
+#endif
 	"jne Spin_Lock \n"
 	"Get_Lock_Success:"
 	:
