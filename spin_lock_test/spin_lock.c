@@ -1,8 +1,6 @@
 #include <stdio.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <signal.h>
 #include "shm.h"
 unsigned long get_chg_time = 0;
 
@@ -11,32 +9,33 @@ unsigned long *global_lock = NULL;
 unsigned long *exec_proc = NULL;
 int get_lock()
 {
-	int locked_val = 1;
 	__asm__(
 	"Spin_Lock: \n"
-	"cmpq $0, (%[global_lock_addr]) \n"
+	"cmpq $0, %[global_lock] \n"
 	"je  Get_Lock \n"
 	FILL_INST "\n"
 	"jmp Spin_Lock \n"
 	"Get_Lock: \n"
-	"mov $1, %[locked_val] \n"
-	"xchg %[locked_val], (%[global_lock_addr]) \n" //, %[locked_val] \n"
-	"cmp $0, %[locked_val]\n"
+	FILL_INST "\n"
+	"mov $1, %%rax \n"
+	"xchg %%rax, %[global_lock] \n" //, %[locked_val] \n"
+	"cmp $0, %%rax\n"
 	"jne Spin_Lock \n"
 	"Get_Lock_Success:"
-	::
-	[global_lock_addr] "r" (global_lock),
-	[locked_val] "r" (locked_val)
 	:
+	[global_lock] "+m" (*global_lock)
+	:
+	:
+	"%rax"
 	);
 	return 0;
-}
+} 
+
 int release_lock()
 {
-	int unlock_val = 0;
-	__asm("xchg %[unlock_val], (%[global_lock_addr])"::
-			[global_lock_addr] "r" (global_lock),
-			[unlock_val] "r" (unlock_val)
+	__asm__("movq $0, %[global_lock]":
+			[global_lock] "+m" (*global_lock)
+			:
 			:);
 }
 
@@ -51,7 +50,6 @@ int main()
 	exec_proc = global_lock + 1;
 
 	*exec_proc = *exec_proc + 1;
-
 	while (*exec_proc < NEED_EXEC_NUM) {
 
 	}
