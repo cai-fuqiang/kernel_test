@@ -10,9 +10,10 @@ else
 	exec_name=./spinlock_nopause 
 fi
 
+./clean_exec_num
 for ((i=0;i<$NEED_EXEC_NUM;i++))
 do
-perf stat -e machine_clears.memory_ordering -e inst_retired.any ./$exec_name > log/${exec_name}_${i}.txt 2>&1 &
+	perf stat -e machine_clears.memory_ordering -e inst_retired.any -e cycles -e task-clock ./$exec_name > log/${exec_name}_${i}.txt 2>&1 &
 done
 
 while [ 1 ]

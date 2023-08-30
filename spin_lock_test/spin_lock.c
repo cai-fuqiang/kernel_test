@@ -38,7 +38,12 @@ int release_lock()
 			[global_lock_addr] "r" (global_lock),
 			[unlock_val] "r" (unlock_val)
 			:);
+	//__asm__("movq $0, %[global_lock]":
+        //        [global_lock] "+m" (*global_lock)
+        //        :
+        //        :);
 }
+
 
 int main()
 {
