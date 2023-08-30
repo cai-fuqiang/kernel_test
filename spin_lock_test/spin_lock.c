@@ -34,14 +34,14 @@ int get_lock()
 int release_lock()
 {
 	int unlock_val = 0;
-	__asm("xchg %[unlock_val], (%[global_lock_addr])"::
-			[global_lock_addr] "r" (global_lock),
-			[unlock_val] "r" (unlock_val)
-			:);
-	//__asm__("movq $0, %[global_lock]":
-        //        [global_lock] "+m" (*global_lock)
-        //        :
-        //        :);
+	//__asm("xchg %[unlock_val], (%[global_lock_addr])"::
+	//		[global_lock_addr] "r" (global_lock),
+	//		[unlock_val] "r" (unlock_val)
+	//		:);
+	__asm__("movq $0, %[global_lock]":
+                [global_lock] "+m" (*global_lock)
+                :
+                :);
 }
 
 
