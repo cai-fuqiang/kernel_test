@@ -2,17 +2,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "shm.h"
-unsigned long get_chg_time = 0;
+unsigned int *global_lock = NULL;
 
-unsigned long *global_lock = NULL;
-
-unsigned long *exec_proc = NULL;
+unsigned int *exec_proc = NULL;
 int get_lock()
 {
 	__asm__(
 #ifndef XCHG_BEG
 	"Spin_Lock: \n"
-	"cmpq $0, %[global_lock] \n"
+	"cmpl $0, %[global_lock] \n"
 	"je  Get_Lock \n"
 	FILL_INST "\n"
 	"jmp Spin_Lock \n"
@@ -21,9 +19,9 @@ int get_lock()
 #ifdef XCHG_BEG
         "Spin_Lock: \n"
 #endif
-	"mov $1, %%rax \n"
-	"xchg %%rax, %[global_lock] \n" //, %[locked_val] \n"
-	"cmp $0, %%rax\n"
+	"mov $1, %%eax \n"
+	"xchg %%eax, %[global_lock] \n" //, %[locked_val] \n"
+	"cmp $0, %%eax\n"
 #ifdef XCHG_BEG
 	FILL_INST "\n"
 #endif
@@ -33,14 +31,14 @@ int get_lock()
 	[global_lock] "+m" (*global_lock)
 	:
 	:
-	"%rax", "memory"
+	"%eax", "memory"
 	);
 	return 0;
 } 
 
 int release_lock()
 {
-	__asm__("movq $0, %[global_lock]":
+	__asm__("movl $0, %[global_lock]":
 			[global_lock] "+m" (*global_lock)
 			:
 			:);
@@ -51,7 +49,7 @@ int main()
 	int i = 0;
 
 	init_shm();
-	global_lock = (unsigned long *)get_shm();
+	global_lock = (unsigned int *)get_shm();
 	*global_lock = 0;
 
 	exec_proc = global_lock + 1;
