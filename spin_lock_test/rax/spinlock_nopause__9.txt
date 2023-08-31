@@ -1,0 +1,16 @@
+exec lock 
+get lock time 5000000
+
+ Performance counter stats for './spinlock_nopause':
+
+        21,878,637      machine_clears.memory_ordering:u #    1.100 M/sec                     
+     8,324,908,294      inst_retired.any:u               #  418.392 M/sec                     
+    63,392,093,563      cycles:u                         #    3.186 GHz                       
+         19,897.39 msec task-clock:u                     #    0.996 CPUs utilized             
+
+      19.977273957 seconds time elapsed
+
+      19.833520000 seconds user
+       0.000951000 seconds sys
+
+

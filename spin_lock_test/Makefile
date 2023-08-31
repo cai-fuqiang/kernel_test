@@ -1,4 +1,4 @@
-EXEC_OBJ 	:= spinlock_pause spinlock_nopause clean_exec_num
+EXEC_OBJ 	:= spinlock_pause spinlock_nopause clean_exec_num only_loop
 cflags		:= -DNEED_EXEC_NUM=$(NEED_EXEC_NUM)
 
 ifeq ($(XCHG_BEG), 1)
@@ -11,6 +11,9 @@ LIB_O	:= shm.o
 
 %.o:%.c
 	gcc $(cflags) -O0 -c $< -o $@ -g -DBUILD_PAUSE=1
+
+only_loop:only_loop.o
+	gcc -o $@ $^
 
 spinlock_pause:spin_lock.o $(LIB_O)
 	gcc -o $@ $^

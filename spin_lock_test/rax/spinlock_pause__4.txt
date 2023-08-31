@@ -1,0 +1,16 @@
+exec lock 
+get lock time 5000000
+
+ Performance counter stats for './spinlock_pause':
+
+         2,673,344      machine_clears.memory_ordering:u #  199.291 K/sec                     
+       787,798,654      inst_retired.any:u               #   58.728 M/sec                     
+    42,684,047,430      cycles:u                         #    3.182 GHz                       
+         13,414.27 msec task-clock:u                     #    0.968 CPUs utilized             
+
+      13.858782434 seconds time elapsed
+
+      13.370347000 seconds user
+       0.002977000 seconds sys
+
+

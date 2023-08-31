@@ -33,7 +33,7 @@ int get_lock()
 	[global_lock] "+m" (*global_lock)
 	:
 	:
-	"%rax"
+	"%rax", "memory"
 	);
 	return 0;
 } 
