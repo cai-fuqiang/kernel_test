@@ -283,7 +283,7 @@ end:
         return lbuf;
 
 }
-
+#if 0
 //static const struct file_operations my_page_proc_fops = {
 static const  struct proc_ops my_page_proc_fops = {
         //.proc_read = my_page_read,
@@ -296,6 +296,25 @@ static const  struct proc_ops my_page_flags_proc_fops = {
 static const struct proc_ops my_page_misc_proc_fops = {
         .proc_write = my_page_misc_write
 };
+#endif
+#define FEDORA 
+
+#ifdef FEDORA
+#define PROC_FOPS_ONLY_WRITE(_name)             \
+        static const struct proc_ops _name ## _proc_fops = {    \
+                .proc_write = _name ##_write                           \
+        };
+#else
+#define PROC_FOPS_ONLY_WRITE(_name)             \
+        static const struct file_operations _name ## _proc_fops = {     \
+                .owner = THIS_MODULE,                   \
+                .write = _name ##_write,                        \
+        };
+#endif
+
+PROC_FOPS_ONLY_WRITE(my_page)
+PROC_FOPS_ONLY_WRITE(my_page_flags)
+PROC_FOPS_ONLY_WRITE(my_page_misc)
 
 void free_proc_file(void)
 {
