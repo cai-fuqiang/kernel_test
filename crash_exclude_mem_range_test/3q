@@ -117,7 +117,7 @@ int main() {
 	test_exclude(cmem, 2, start, end);
 
 	start[0] = 500;
-	end[0] = 1000;
+	end[0] = 600;
 	test_exclude(cmem, 1, start, end);
 	return 0;
 }

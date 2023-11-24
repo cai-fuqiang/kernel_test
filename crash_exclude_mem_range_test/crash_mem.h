@@ -17,6 +17,9 @@ struct crash_mem {
 
 #define RANGE_ARR_NUM	4
 #define EX_TIME		1
+
+#define AVOID_OVER	16
+
 #define EACH_RANGE_SIZE	1000
 
 #define ENOMEM		1

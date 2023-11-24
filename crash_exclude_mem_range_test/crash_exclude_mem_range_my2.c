@@ -1,6 +1,6 @@
 #include "crash_mem.h"
 
-int crash_exclude_mem_range_my(struct crash_mem *mem,
+int crash_exclude_mem_range_my2(struct crash_mem *mem,
                             unsigned long long mstart, unsigned long long mend)
 {
         int i, j;
@@ -21,28 +21,7 @@ int crash_exclude_mem_range_my(struct crash_mem *mem,
                         p_start = start;
                 if (mend > end)
                         p_end = end;
-#if 1
-                /* Found completely overlapping range */
-                if (p_start == start && p_end == end) {
-                        mem->ranges[i].start = 0;
-                        mem->ranges[i].end = 0;
 
-                        /* Shift rest of the ranges to left */
-                        for (j = i; j < mem->nr_ranges - 1; j++) {
-                                mem->ranges[j].start =
-                                        mem->ranges[j+1].start;
-                                mem->ranges[j].end =
-                                                mem->ranges[j+1].end;
-                        }
-
-                        /*
-                         * Continue to check if there are another overlapping ranges
-                         * from the current position because of shifting the above
-                         * mem ranges.
-                         */
-                        i--;
-                        mem->nr_ranges--;
-#else
                 /* Found completely overlapping range */
                 if (p_start == start && p_end == end) {
                         mem->ranges[i].start = 0;
@@ -67,8 +46,12 @@ int crash_exclude_mem_range_my(struct crash_mem *mem,
                         }
                         mem->nr_ranges--;
                         return 0;
-#endif
-                } else if (p_start > start && p_end < end) {
+                }
+
+                if (p_start > start && p_end < end) {
+                        /* Split happened */
+                        if (mem->nr_ranges == mem->max_nr_ranges)
+                                return -ENOMEM;
                         /* Split original range */
                         mem->ranges[i].end = p_start - 1;
                         temp_range.start = p_end + 1;
@@ -77,26 +60,26 @@ int crash_exclude_mem_range_my(struct crash_mem *mem,
                         mem->ranges[i].end = p_start - 1;
                 else
                         mem->ranges[i].start = p_end + 1;
+                break;
+        }
 
-		/* If a split happened, add the split to array */
-        	if (!temp_range.end)
-        	        continue;
+        /* If a split happened, add the split to array */
+        if (!temp_range.end)
+                return 0;
 
-        	/* Split happened */
-        	if (i == mem->max_nr_ranges - 1)
-        	        return -ENOMEM;
 
-        	/* Location where new range should go */
-        	j = i + 1;
-        	if (j < mem->nr_ranges) {
-        	        /* Move over all ranges one slot towards the end */
-        	        for (i = mem->nr_ranges - 1; i >= j; i--)
-        	                mem->ranges[i + 1] = mem->ranges[i];
-        	}
+        /* Location where new range should go */
+        j = i + 1;
+        if (j < mem->nr_ranges) {
+                /* Move over all ranges one slot towards the end */
+                for (i = mem->nr_ranges - 1; i >= j; i--)
+                        mem->ranges[i + 1] = mem->ranges[i];
+        }
 
-        	mem->ranges[j].start = temp_range.start;
-        	mem->ranges[j].end = temp_range.end;
-        	mem->nr_ranges++;
-	}
+        mem->ranges[j].start = temp_range.start;
+        mem->ranges[j].end = temp_range.end;
+        mem->nr_ranges++;
         return 0;
 }
+
+
