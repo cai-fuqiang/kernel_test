@@ -118,7 +118,8 @@ static void modify_pv_tlb_ptr(void *ptr)
 	 * https://github.com/cai-fuqiang/kernel_test/tree/master/tlb_test
 	 */
 	__flush_tlb_all();
-	pv_mmu_ops.flush_tlb_others = ptr;
+
+	WRITE_ONCE(pv_mmu_ops.flush_tlb_others, ptr);
 
 	revert_pgtable_flags(&g_page_info);
 	__flush_tlb_all();
