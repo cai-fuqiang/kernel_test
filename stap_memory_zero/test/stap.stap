@@ -1,0 +1,9 @@
+function my_print(addr:long)
+{
+	printf("the addr %lx\n", addr);
+}
+
+probe begin
+{
+	my_print(0xffffffffffff0000);	
+}

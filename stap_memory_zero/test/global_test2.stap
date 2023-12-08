@@ -1,0 +1,11 @@
+
+global a
+
+probe begin {
+	a = 1;
+}
+
+probe end {
+	printf("%d\n", a);
+
+}

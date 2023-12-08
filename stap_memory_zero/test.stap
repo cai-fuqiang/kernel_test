@@ -1,0 +1,68 @@
+global pid = 0;
+global start_alloc = 0;
+global i = 0;
+
+global is_enter_alloc_zero=0;
+probe process("/root/workspace/test/main").function("main")
+{
+	printf("the pid = %d\n", pid());
+	printf("the pid = %d\n", pid());
+	printf("the pid = %d\n", pid());
+	pid = pid()
+}
+
+probe process("/root/workspace/test/main").function("start_alloc")
+{
+	start_alloc=1;
+	i = 0;
+}
+probe kernel.function("handle_mm_fault")
+{
+	if (start_alloc && pid == pid()) {
+		//is_enter_alloc_zero=0;
+		printf("enter %s flags %u \n", ppfunc(), $flags);
+	}
+}
+
+probe kernel.function("handle_mm_fault").return
+{
+	if (start_alloc && pid == pid() ) { //&& !is_enter_alloc_zero) {
+		printf("enter %s.ret \n", ppfunc());
+	//	printf("is NOT ALLOC zero\n");
+	//	//print_ubacktrace();
+	//	//print_backtrace();
+	}
+}
+
+probe kernel.statement("do_anonymous_page@mm/memory.c:3251")
+{
+	if (start_alloc && pid == pid()) {
+		printf("[%d] enter ppfunc %s \n", i, ppfunc());
+		print_ubacktrace();
+		i=i+1;
+	}
+	is_enter_alloc_zero=1;
+}
+
+probe process("/root/workspace/test/main").statement("start_alloc@/root/workspace/test/main.c:29")
+{
+	printf("BEFORE ALLOC\n");
+}
+probe process("/root/workspace/test/main").statement("start_alloc@/root/workspace/test/main.c:31")
+{
+	printf("ALLOCATED, BEFORM READ\n");
+}
+probe process("/root/workspace/test/main").statement("start_alloc@/root/workspace/test/main.c:34")
+{
+	printf("READED, BEFORM READ\n");
+}
+
+probe kernel.function("alloc_zeroed_user_highpage_movable")
+{
+	if (start_alloc && pid == pid()) {
+		printf("[%d] enter ppfunc %s \n", i, ppfunc());
+		print_ubacktrace();
+		i=i+1;
+	}
+	is_enter_alloc_zero=1;
+}

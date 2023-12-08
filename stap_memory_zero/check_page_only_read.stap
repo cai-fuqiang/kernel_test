@@ -1,0 +1,85 @@
+/*
+ * [va_algin_4G, index]
+ */
+
+global page_shift = 12 
+global main_pid = 0;
+global va_align_shift  = 0;
+global va_align_mask  = 0;
+global pa_info_arr;
+
+global pte_pfn_mask = 0;
+
+//@define FAULT_FLAG_WRITE  1;
+
+probe process("/root/workspace/test/main").function("main")
+{
+	main_pid = pid();
+	printf("main pid is %d\n", main_pid)
+}
+
+function get_va_align_4G:long(addr:long)
+{
+	return addr >>  va_align_shift;
+}
+
+function get_va_index:long(addr:long)
+{
+	return (addr & va_align_mask) >> page_shift;
+}
+probe kernel.statement("do_anonymous_page@mm/memory.c:3312")
+{
+	if (main_pid != pid()) {
+		next;
+	}
+	pte_t = $vmf->pte;
+	addr = $vmf->address;
+	if (!pte_t) {
+		printf("pte_t is NULL, address is %lx\n", addr);
+		next;
+	}
+	printf("pte is (%lx) vmf flags (%d)\n", 
+		kernel_long(pte_t), $vmf->flags);
+
+	va_align_4G = addr >> va_align_shift;
+	index = (addr & va_align_mask) >> page_shift;
+	
+	if ([va_align_4G, index] in pa_info_arr) {
+		printf("the old pte (%lx)\n", pa_info_arr[va_align_4G, index]);
+		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
+	} else {
+		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
+	}
+	pa_info_arr[va_align_4G, index]++;
+
+	printf("THE new va(%lx) va_algin_4G(%lx) index(%lx) pte(%lx)\n", 
+			addr, va_align_4G, index, kernel_long(pte_t));
+}
+
+probe kernel.function("alloc_zeroed_user_highpage_movable")
+{
+	//addr = $vmf->address
+	//delete pa_info_arr[addr];
+}
+
+probe begin
+{
+	va_align_shift = page_shift + 6;  		//6 is 64 shift
+	va_align_mask = (1 << va_align_shift) - 1;
+
+	pte_pfn_mask = ((1 << page_shift) - 1) ^ ((1 << 48) - 1);
+
+	printf("page_shift(%d) va_align_shift (%d) va_align_mask(0x%lx)\n", 
+			page_shift, va_align_shift, va_align_mask);
+
+	printf("pte_pfn_mask(0x%lx)", pte_pfn_mask);
+}
+
+#probe end
+#{
+#	addr = 0;
+#	foreach ([va_align_4G, index] in pa_info_arr-) {
+#		addr = (va_align_4G  << va_align_shift)  + (index << page_shift);
+#		printf("addr is %lx\n", addr)
+#	}
+#}
