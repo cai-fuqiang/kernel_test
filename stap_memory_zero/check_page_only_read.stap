@@ -27,39 +27,57 @@ function get_va_index:long(addr:long)
 {
 	return (addr & va_align_mask) >> page_shift;
 }
-probe kernel.statement("do_anonymous_page@mm/memory.c:3312")
-{
-	if (main_pid != pid()) {
-		next;
-	}
-	pte_t = $vmf->pte;
-	addr = $vmf->address;
-	if (!pte_t) {
-		printf("pte_t is NULL, address is %lx\n", addr);
-		next;
-	}
-	printf("pte is (%lx) vmf flags (%d)\n", 
-		kernel_long(pte_t), $vmf->flags);
 
-	va_align_4G = addr >> va_align_shift;
-	index = (addr & va_align_mask) >> page_shift;
-	
-	if ([va_align_4G, index] in pa_info_arr) {
-		printf("the old pte (%lx)\n", pa_info_arr[va_align_4G, index]);
-		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
-	} else {
-		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
-	}
-	pa_info_arr[va_align_4G, index]++;
+#%{
+##include <asm/pgtable.h>
+#}%
+#
+#function get_pte_flags(addr:long) %{
+#	
+#
+#%}
 
-	printf("THE new va(%lx) va_algin_4G(%lx) index(%lx) pte(%lx)\n", 
-			addr, va_align_4G, index, kernel_long(pte_t));
-}
+
+#probe kernel.statement("do_anonymous_page@mm/memory.c:3312")
+#{
+#	if (main_pid != pid()) {
+#		next;
+#	}
+#	pte_t = $vmf->pte;
+#	addr = $vmf->address;
+#	if (!pte_t) {
+#		printf("pte_t is NULL, address is %lx\n", addr);
+#		next;
+#	}
+#	printf("pte is (%lx) vmf flags (%d)\n", 
+#		kernel_long(pte_t), $vmf->flags);
+#
+#	va_align_4G = addr >> va_align_shift;
+#	index = (addr & va_align_mask) >> page_shift;
+#	
+#	if ([va_align_4G, index] in pa_info_arr) {
+#		printf("the old pte (%lx)\n", pa_info_arr[va_align_4G, index]);
+#		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
+#	} else {
+#		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
+#	}
+#	pa_info_arr[va_align_4G, index]++;
+#
+#	printf("THE new va(%lx) va_algin_4G(%lx) index(%lx) pte(%lx)\n", 
+#			addr, va_align_4G, index, kernel_long(pte_t));
+#}
 
 probe kernel.function("alloc_zeroed_user_highpage_movable")
 {
-	//addr = $vmf->address
+	addr = $vmf->address
 	//delete pa_info_arr[addr];
+	printf("the addr is %lx\n", addr)
+}
+
+probe kernel.function("do_anonymous_page")
+{
+	addr = $vmf->address
+	printf("the addr is %lx\n", addr)
 }
 
 probe begin
