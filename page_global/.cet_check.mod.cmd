@@ -1,0 +1,1 @@
+savedcmd_/home/wang/workspace/kernel_test/page_global/cet_check.mod := printf '%s\n'   cet_check.o | awk '!x[$$0]++ { print("/home/wang/workspace/kernel_test/page_global/"$$0) }' > /home/wang/workspace/kernel_test/page_global/cet_check.mod

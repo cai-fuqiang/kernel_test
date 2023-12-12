@@ -6,7 +6,7 @@ extern int crash_exclude_mem_range(struct crash_mem *mem,
 
 extern int crash_exclude_mem_range_my(struct crash_mem *mem,
                             unsigned long long mstart, unsigned long long mend);
-extern int crash_exclude_mem_range_my2(struct crash_mem *mem,
+extern int crash_exclude_mem_range_out_of_bounds(struct crash_mem *mem,
                             unsigned long long mstart, unsigned long long mend);
 extern int crash_exclude_mem_range_new(struct crash_mem *mem,
                             unsigned long long mstart, unsigned long long mend);
@@ -51,15 +51,20 @@ void print_crash_mem(struct crash_mem *cmem)
 	printf("nr_ranges:(%u)\n", cmem->nr_ranges);
 	printf("max_nr_ranges:(%u)\n", cmem->max_nr_ranges);
 	if (cmem->nr_ranges > cmem->max_nr_ranges) {
-		printf("OUT OF BOUNDS!!\n");
+		printf("when print, check result is OUT OF BOUNDS: \n"
+			"\tcmem->nr_ranges(%d) > cmem->max_nr_ranges(%d)\n",
+			cmem->nr_ranges, cmem->max_nr_ranges);
 	}
 	for (i = 0; i < cmem->nr_ranges; i++) {
-		if (i == cmem->max_nr_ranges)
-			printf("OUT OF BOUNDS: ");
-		printf("range[%d]:start(%lu)\tend(%lu)\n", 
+		printf("range[%d]:start(%lu)\tend(%lu)", 
 				i,
 				cmem->ranges[i].start,
 				cmem->ranges[i].end);
+		if (i == cmem->max_nr_ranges)
+			printf("  OUT OF BOUND \n");
+		else
+			printf("\n");
+
 	}
 	return;
 }
@@ -91,10 +96,10 @@ int test_exclude(struct crash_mem *cmem, int ex_time, u64 start[], u64 end[])
 	for (j = 0; j < ex_time; j++) {
 		p_start = start[j];
 		p_end = end[j];
-		ret = crash_exclude_mem_range_my2(cmem, p_start, p_end);
+		ret = crash_exclude_mem_range_out_of_bounds(cmem, p_start, p_end);
 
 		if (ret < 0) {
-			printf(" crash_exclude_mem_range ret = %d\n", ret);
+			printf("crash_exclude_mem_range ret = %d\n", ret);
 		}
 	}
 	print_crash_mem(cmem);
@@ -105,8 +110,8 @@ end:
 int main() {
 	struct crash_mem *cmem;
 	int ret;
-	u64 start[] = {500, 1500};
-	u64 end[] = {600, 1600};
+	u64 start[] = {100, 300};
+	u64 end[] = {200, 400};
 
 	cmem = get_global_crash_mem();
 	printf("the org arr\n");
@@ -116,8 +121,8 @@ int main() {
 	//test_exclude(cmem, 500, 400);
 	test_exclude(cmem, 2, start, end);
 
-	start[0] = 500;
-	end[0] = 1000;
-	test_exclude(cmem, 1, start, end);
+	//start[0] = 0;
+	//end[0] = 2001;
+	//test_exclude(cmem, 1, start, end);
 	return 0;
 }

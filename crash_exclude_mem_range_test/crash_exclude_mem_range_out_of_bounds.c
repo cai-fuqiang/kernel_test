@@ -1,6 +1,6 @@
 #include "crash_mem.h"
 
-int crash_exclude_mem_range_my2(struct crash_mem *mem,
+int crash_exclude_mem_range_out_of_bounds(struct crash_mem *mem,
                             unsigned long long mstart, unsigned long long mend)
 {
         int i, j;

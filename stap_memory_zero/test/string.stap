@@ -1,0 +1,13 @@
+function is_attach_task(comm:string)
+{
+
+	return comm == "main"
+}
+
+
+probe kernel.function("do_exit")
+{
+	if (is_attach_task(execname())) {
+		printf("the attch task is exit\n");
+	}
+}

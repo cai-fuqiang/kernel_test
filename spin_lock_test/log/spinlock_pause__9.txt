@@ -1,0 +1,15 @@
+./spinlock_pause: 中断
+
+ Performance counter stats for './spinlock_pause':
+
+           133,134      machine_clears.memory_ordering:u #  242.883 K/sec                     
+        94,694,859      inst_retired.any:u               #  172.756 M/sec                     
+     2,175,149,404      cycles:u                         #    3.968 GHz                       
+            548.14 msec task-clock:u                     #    0.275 CPUs utilized             
+
+       1.990717204 seconds time elapsed
+
+       0.547420000 seconds user
+       0.000000000 seconds sys
+
+

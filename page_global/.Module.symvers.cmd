@@ -1,0 +1,1 @@
+savedcmd_/home/wang/workspace/kernel_test/page_global/Module.symvers :=  scripts/mod/modpost        -o /home/wang/workspace/kernel_test/page_global/Module.symvers -T /home/wang/workspace/kernel_test/page_global/modules.order -i Module.symvers -e 

@@ -1,8 +1,8 @@
 /*
- * [va_algin_4G, index]
+ * [PID, va_algin_4G, index]
  */
 
-global page_shift = 12 
+global page_shift = 16
 global main_pid = 0;
 global va_align_shift  = 0;
 global va_align_mask  = 0;
@@ -12,15 +12,21 @@ global pte_pfn_mask = 0;
 
 //@define FAULT_FLAG_WRITE  1;
 
-probe process("/root/workspace/test/main").function("main")
-{
-	main_pid = pid();
-	printf("main pid is %d\n", main_pid)
-}
+global fault_flag_write=1
+
+#probe kernel.function("do_exit")
+#{
+#	if (!is_attach_task()) {
+#		next;
+#	}
+#	foreach([pid, va_align_4G, index] in  pa_info_arr) {
+#		delete pa_info_arr[pid, va_align_4G, index]
+#	}
+#}
 
 function get_va_align_4G:long(addr:long)
 {
-	return addr >>  va_align_shift;
+	return addr >> va_align_shift;
 }
 
 function get_va_index:long(addr:long)
@@ -28,56 +34,78 @@ function get_va_index:long(addr:long)
 	return (addr & va_align_mask) >> page_shift;
 }
 
-#%{
-##include <asm/pgtable.h>
-#}%
-#
-#function get_pte_flags(addr:long) %{
-#	
-#
-#%}
-
-
-#probe kernel.statement("do_anonymous_page@mm/memory.c:3312")
-#{
-#	if (main_pid != pid()) {
-#		next;
-#	}
-#	pte_t = $vmf->pte;
-#	addr = $vmf->address;
-#	if (!pte_t) {
-#		printf("pte_t is NULL, address is %lx\n", addr);
-#		next;
-#	}
-#	printf("pte is (%lx) vmf flags (%d)\n", 
-#		kernel_long(pte_t), $vmf->flags);
-#
-#	va_align_4G = addr >> va_align_shift;
-#	index = (addr & va_align_mask) >> page_shift;
-#	
-#	if ([va_align_4G, index] in pa_info_arr) {
-#		printf("the old pte (%lx)\n", pa_info_arr[va_align_4G, index]);
-#		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
-#	} else {
-#		pa_info_arr[va_align_4G, index] = kernel_long(pte_t);
-#	}
-#	pa_info_arr[va_align_4G, index]++;
-#
-#	printf("THE new va(%lx) va_algin_4G(%lx) index(%lx) pte(%lx)\n", 
-#			addr, va_align_4G, index, kernel_long(pte_t));
-#}
-
-probe kernel.function("alloc_zeroed_user_highpage_movable")
+function is_attach_task:long()
 {
-	addr = $vmf->address
-	//delete pa_info_arr[addr];
-	printf("the addr is %lx\n", addr)
+	return execname() == "main"
 }
 
-probe kernel.function("do_anonymous_page")
+%{
+#include <asm/pgtable.h>
+#include <linux/mm.h>
+%}
+
+function get_pte_value:long(addr:long) %{
+	struct vm_fault *ptr = (struct vm_fault *)STAP_ARG_addr;
+	unsigned long *pte_addr = 0;
+	unsigned long pte_val = 0;
+	if (ptr)
+		pte_addr = (unsigned long *)ptr->pte;
+	if (pte_addr) {
+		pte_val = *pte_addr;
+	}
+	STAP_RETURN(pte_val);
+%}
+
+function pte_is_map_under_4G:long(pte_val:long) {
+	return !(pte_val & 0xffff00000000)
+	//return 1;
+}
+
+probe kernel.function("do_wp_page")
 {
-	addr = $vmf->address
-	printf("the addr is %lx\n", addr)
+	if (!is_attach_task()) {
+		next;
+	}
+
+	pte = get_pte_value($vmf)
+
+	if (!pte || !pte_is_map_under_4G(pte)) {
+		next;
+	}
+	va_addr = $vmf->address
+	va_align_4G = get_va_align_4G(va_addr)
+	va_index = get_va_index(va_addr)
+
+	printf("enter do_wp_page , addr(%lx) vmf (%lx) pte (%lx) flags(%x)\n", $vmf->address, $vmf, pte, $vmf->flags);
+	
+	delete pa_info_arr[pid(), va_align_4G, va_index]
+}
+
+probe kernel.function("do_anonymous_page").return
+{
+	if (!is_attach_task()) {
+		next;
+	}
+	flags = $vmf->flags
+	va_addr = $vmf->address
+
+	if (!$vmf->flags & fault_flag_write) {
+		next;
+	}
+
+	pte = get_pte_value($vmf)
+
+	if (!pte) {
+		next;
+	}
+
+	if (!pte_is_map_under_4G(pte)) {
+		next;
+	}
+	printf("exit do_anonymous_page, addr(%lx) vmf (%lx) pte (%lx) flags(%x)\n", $vmf->address, $vmf, pte, $vmf->flags);
+	va_align_4G = get_va_align_4G(va_addr)
+	va_index = get_va_index(va_addr)
+	pa_info_arr[pid(), va_align_4G, va_index] = pte
 }
 
 probe begin
@@ -93,11 +121,21 @@ probe begin
 	printf("pte_pfn_mask(0x%lx)", pte_pfn_mask);
 }
 
-#probe end
-#{
-#	addr = 0;
-#	foreach ([va_align_4G, index] in pa_info_arr-) {
-#		addr = (va_align_4G  << va_align_shift)  + (index << page_shift);
-#		printf("addr is %lx\n", addr)
-#	}
-#}
+
+probe end
+{
+	addr = 0;
+	foreach ([pid, va_align_4G, index] in pa_info_arr-) {
+		addr = (va_align_4G  << va_align_shift)  + (index << page_shift);
+		printf("addr is %lx\n", addr)
+	}
+}
+
+probe timer.ms(2000) 
+{
+	addr = 0;
+	foreach ([pid, va_align_4G, index] in pa_info_arr-) {
+		addr = (va_align_4G  << va_align_shift)  + (index << page_shift);
+		printf("[%d]the alloc addr(%lx)\n", pid,  addr);
+	}
+}

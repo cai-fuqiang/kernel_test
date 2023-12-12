@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 static int b = 0;
 #define ALIGN_MALLOC
@@ -11,6 +12,8 @@ static int b = 0;
 #define my_malloc(algin, size)	\
 	malloc(size,size);
 #endif
+
+#define PAGE_SIZE  (64 * 1024)
 int is_all_zero(char *buf, size_t size)
 {
 	int i = 0;
@@ -29,12 +32,13 @@ int start_alloc()
 	char a = 0;
         for (i = 0; i < 4; i++) {
 		b = 0;
-                addr = my_malloc(4096, 4096);
-		if (!is_all_zero(addr, 4096)) {
+                addr = my_malloc(PAGE_SIZE, PAGE_SIZE);
+		if (!is_all_zero(addr, PAGE_SIZE)) {
 			printf("my malloc allocate NOT ZERO memory\n");
 		}
-		printf("the alloc addr is %lx\n",  addr);
-		memset(addr, 0, 4096);
+		if ( i != 3 ) {
+			memset(addr, 0, PAGE_SIZE);
+		}
 		b = 0;
         }
 	return 0;
@@ -43,6 +47,7 @@ int start_alloc()
 int main()
 {
 	start_alloc();
+	sleep(200);
         return 0;
 }
 

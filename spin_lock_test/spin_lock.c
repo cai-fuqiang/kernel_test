@@ -43,7 +43,6 @@ int release_lock()
 			:
 			:);
 }
-
 int main()
 {
 	int i = 0;

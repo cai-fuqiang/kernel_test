@@ -1,0 +1,48 @@
+From 49b575eacae541c7aa052f1aa47cf24429799679 Mon Sep 17 00:00:00 2001
+From: fuqiang wang <fuqiang.wang@easystack.cn>
+Date: Fri, 24 Nov 2023 18:35:33 +0800
+Subject: [PATCH] kexec: avoid out of bounds in crash_exclude_mem_range()
+
+When the split happened, judge whether mem->nr_ranges is equal to
+mem->max_nr_ranges. If it is true, return -ENOMEM.
+
+The advantage of doing this is that it can avoid array bounds caused by
+some bugs. E.g., Before commit 4831be702b95 ("arm64/kexec: Fix missing
+extra range for crashkres_low."), reserve both high and low memories for
+the crashkernel may cause out of bounds.
+
+On the other hand, move this code before the split to ensure that the
+array will not be changed when return error.
+
+Signed-off-by: fuqiang wang <fuqiang.wang@easystack.cn>
+---
+ kernel/crash_core.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/crash_core.c b/kernel/crash_core.c
+index efe87d501c8c..ffdc246cf425 100644
+--- a/kernel/crash_core.c
++++ b/kernel/crash_core.c
+@@ -611,6 +611,9 @@ int crash_exclude_mem_range(struct crash_mem *mem,
+ 		}
+ 
+ 		if (p_start > start && p_end < end) {
++			/* Split happened */
++			if (mem->nr_ranges == mem->max_nr_ranges)
++				return -ENOMEM;
+ 			/* Split original range */
+ 			mem->ranges[i].end = p_start - 1;
+ 			temp_range.start = p_end + 1;
+@@ -626,9 +629,6 @@ int crash_exclude_mem_range(struct crash_mem *mem,
+ 	if (!temp_range.end)
+ 		return 0;
+ 
+-	/* Split happened */
+-	if (i == mem->max_nr_ranges - 1)
+-		return -ENOMEM;
+ 
+ 	/* Location where new range should go */
+ 	j = i + 1;
+-- 
+2.42.0
+

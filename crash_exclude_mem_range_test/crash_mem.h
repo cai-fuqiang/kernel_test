@@ -15,7 +15,7 @@ struct crash_mem {
 	struct range ranges[];
 };
 
-#define RANGE_ARR_NUM	4
+#define RANGE_ARR_NUM	2
 #define EX_TIME		1
 
 #define AVOID_OVER	16

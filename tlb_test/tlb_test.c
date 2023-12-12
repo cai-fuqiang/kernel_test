@@ -316,7 +316,7 @@ PROC_FOPS_ONLY_WRITE(my_page)
 PROC_FOPS_ONLY_WRITE(my_page_flags)
 PROC_FOPS_ONLY_WRITE(my_page_misc)
 
-void free_proc_file(void)
+void free_proc_file(int arr)
 {
         if (my_page_proc) {
                 proc_remove(my_page_proc);
@@ -337,7 +337,7 @@ void free_proc_file(void)
         }
         return ;
 }
-
+EXPORT_SYMBOL(free_proc_file);
 #define create_proc_file(_name) \
         do {                                                                                    \
                 _name = proc_create("fuqiang/"#_name, 0, NULL, & _name ## _fops);                 \
@@ -362,13 +362,13 @@ static int __init my_init(void)
 end:
         return 0;
 err:
-        free_proc_file();
+        free_proc_file(0);
         goto end;
 }
 static void __exit my_exit(void)
 {
         pr_info("inter the exit\n");
-        free_proc_file();
+        free_proc_file(0);
 
         if (g_page_info.page) {
                 __free_pages(g_page_info.page, 0);
