@@ -9,7 +9,7 @@ after throttle dirtyrate 340
 org_chg_100_to_10000:           current(1000) quota(333) sleep_pct(66) throttle_us(400600)
 after throttle dirtyrate 333
 -------------------------
-my_func_use_double:             current(1000) quota(333) sleep_pct(66) throttle_us(400000)
+my_func_use_double:             current(1000) quota(333) sleep_pct(66) throttle_us(400600)
 after throttle dirtyrate 333
 -------------------------
 my_func_use_int_100:            current(1000) quota(333) sleep_pct(66) throttle_us(400000)
@@ -25,7 +25,7 @@ after throttle dirtyrate 10000
 org_chg_100_to_10000:           current(1000000) quota(333) sleep_pct(99) throttle_us(499800000)
 after throttle dirtyrate 400
 -------------------------
-my_func_use_double:             current(1000000) quota(333) sleep_pct(99) throttle_us(600400000)
+my_func_use_double:             current(1000000) quota(333) sleep_pct(99) throttle_us(600400600)
 after throttle dirtyrate 333
 -------------------------
 my_func_use_int_100:            current(1000000) quota(333) sleep_pct(99) throttle_us(600400000)
@@ -41,7 +41,7 @@ after throttle dirtyrate 100000000
 org_chg_100_to_10000:           current(10000000000) quota(333) sleep_pct(99) throttle_us(1999800000)
 after throttle dirtyrate 1000000
 -------------------------
-my_func_use_double:             current(10000000000) quota(333) sleep_pct(99) throttle_us(6006005800000)
+my_func_use_double:             current(10000000000) quota(333) sleep_pct(99) throttle_us(6006005806006)
 after throttle dirtyrate 333
 -------------------------
 my_func_use_int_100:            current(10000000000) quota(333) sleep_pct(99) throttle_us(6006005806000)
@@ -49,7 +49,7 @@ after throttle dirtyrate 333
 =========================
 ```
 
-Based on the tests above, it seems that using the last method can achieve
+Based on the tests above, it seems that using the third method can achieve
 relatively high precision.
 
 In cases where the dirty page rate is not that high, the third method can also

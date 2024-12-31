@@ -39,7 +39,7 @@ void my_func_use_double(uint64_t quota, uint64_t current)
 	double sleep_pct = 0;
 	uint64_t throttle_us = 0;
 
-	sleep_pct = (current - quota) / quota;
+	sleep_pct = (current - quota) / (double)quota;
 	throttle_us =
 		ring_full_time_us * sleep_pct;
 
