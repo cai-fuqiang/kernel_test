@@ -1,0 +1,208 @@
+#!/usr/bin/python3
+#
+# bashreadline  Print entered bash commands from all running shells.
+#               For Linux, uses BCC, eBPF. Embedded C.
+#
+# USAGE: bashreadline [-s SHARED]
+# This works by tracing the readline() function using a uretprobe (uprobes).
+# When you failed to run the script directly with error:
+# `Exception: could not determine address of symbol b'readline'`,
+# you may need specify the location of libreadline.so library
+# with `-s` option.
+#
+# Copyright 2016 Netflix, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+#
+# 28-Jan-2016    Brendan Gregg   Created this.
+# 12-Feb-2016    Allan McAleavy migrated to BPF_PERF_OUTPUT
+
+from __future__ import print_function
+from bpfcc import BPF
+from time import strftime
+import argparse
+
+parser = argparse.ArgumentParser(
+        description="Print entered bash commands from all running shells",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+parser.add_argument("-s", "--shared", nargs="?",
+        const="/lib/libreadline.so", type=str,
+        help="specify the location of libreadline.so library.\
+              Default is /lib/libreadline.so")
+args = parser.parse_args()
+
+name = "/usr/local/bin/qemu-system-x86_64"
+
+## args.shared if args.shared else "/usr/"
+
+# load BPF program
+bpf_text = """
+#include <uapi/linux/ptrace.h>
+#include <linux/sched.h>
+
+typedef struct {
+    int plugged;
+    unsigned int in_queue;
+    unsigned int in_flight;
+    bool blocked;
+} LaioQueue;
+
+struct AioContext {
+   char padding[552];
+   long aio_max_batch;
+};
+
+struct LinuxAioState {
+    struct AioContext *aio_context;   
+	char padding[24];
+	LaioQueue io_q;
+};
+
+enum event_type {
+    EVENT_PLUGGED_DEC = 0,
+    EVENT_SET_PLUGGED_TO_ONE
+};
+struct qemu_data {
+    u32 pid;
+    unsigned long bs;
+    unsigned long s;
+    unsigned long dev_max_batch;
+    unsigned long io_q_ptr;
+    int plugged;
+    unsigned int in_queue;
+    unsigned int in_flight;
+    unsigned char blocked;
+    long aio_max_batch;
+    enum event_type event_type;
+};
+
+BPF_PERF_OUTPUT(events);
+
+#define DEFAULT_MAX_BATCH 32
+#define MAX_EVENTS 1024
+#define MIN_NON_ZERO(a, b)                              \
+    ({                                                  \
+        typeof(1 ? (a) : (b)) _a = (a), _b = (b);       \
+        _a == 0 ? _b : (_b == 0 || _b > _a) ? _a : _b;  \
+    })
+
+static int laio_max_batch(struct LinuxAioState *s, struct qemu_data *data)
+{
+   long max_batch = data->aio_max_batch ?: 32;
+   unsigned long dev_max_batch = data->dev_max_batch;
+   unsigned int in_flight = data->in_flight;
+
+   max_batch = MIN_NON_ZERO(dev_max_batch, max_batch);
+
+   max_batch = MIN_NON_ZERO(MAX_EVENTS - in_flight, max_batch);
+
+   return  max_batch; 
+}
+
+static int get_qemu_data_from_context(struct pt_regs *ctx, struct qemu_data *data) 
+{
+    struct AioContext *aio_ctx;
+    struct LinuxAioState *s;
+    long aio_max_batch;
+
+    if (!PT_REGS_PARM1(ctx))
+        return -1;
+    if (!PT_REGS_PARM2(ctx))
+        return -1;
+    data->pid = bpf_get_current_pid_tgid() >> 32;
+
+    data->bs = PT_REGS_PARM1(ctx);
+    data->s  = PT_REGS_PARM2(ctx);
+    data->dev_max_batch  = PT_REGS_PARM3(ctx);
+
+    s = (struct LinuxAioState *)data->s;
+
+    bpf_probe_read_user(&data->plugged, sizeof(LaioQueue), &s->io_q);
+
+    bpf_probe_read_user(&aio_ctx, sizeof(aio_ctx), &s->aio_context);
+
+    bpf_probe_read_user(&aio_max_batch, sizeof(long), &aio_ctx->aio_max_batch);
+
+    data->aio_max_batch = aio_max_batch;
+
+    return 0;
+}
+
+int plugged_dec(struct pt_regs *ctx)
+{
+    struct qemu_data data  = {};
+    int ret = 0;
+
+    struct LinuxAioState *s = NULL;
+    int modify_plugged = 0;
+
+    ret = get_qemu_data_from_context(ctx, &data);
+
+    if (ret < 0) {
+        return 0;
+    }
+    s = (struct LinuxAioState *)(data.s);
+    if (data.in_queue >= laio_max_batch(s, &data)) {
+        //strncpy(data.event_type, "dec plugged", sizeof(data.event_type));
+        data.event_type = EVENT_PLUGGED_DEC;
+        modify_plugged = data.plugged-1;
+        bpf_probe_write_user(&s->io_q.plugged, &modify_plugged, sizeof(modify_plugged));
+		events.perf_submit(ctx, &data, sizeof(data));
+    }
+    return 0;
+}
+
+int set_plugged_to_one(struct pt_regs *ctx)
+{
+    struct qemu_data data  = {};
+    int ret = 0;
+
+    struct LinuxAioState *s = NULL;
+    int modify_plugged = 0;
+
+    ret = get_qemu_data_from_context(ctx, &data);
+
+    if (ret < 0) {
+        return 0;
+    }
+    s = (struct LinuxAioState *)(data.s);
+
+    if (data.plugged !=1) {
+        //strncpy(data.event_type, "set plugged to 1", sizeof(data.event_type));
+        data.event_type = EVENT_SET_PLUGGED_TO_ONE;
+        modify_plugged = 1;
+        bpf_probe_write_user(&s->io_q.plugged, &modify_plugged, sizeof(modify_plugged));
+		events.perf_submit(ctx, &data, sizeof(data));
+    }
+    return 0;
+}
+"""
+
+b = BPF(text=bpf_text)
+b.attach_uprobe(name=name, sym="laio_io_unplug", sym_off=72, fn_name="plugged_dec")
+b.attach_uprobe(name=name, sym="laio_io_unplug", fn_name="set_plugged_to_one")
+
+# header
+print("%-10s %-10s %-15s %-10s %-10s %-10s %-10s %-10s %-10s" % ("time", "PID", "LinuxAioState", "dev_max_batch", "plugged",
+                                                                 "in_queue", "in_flight","blocked", "event_type"))
+
+def print_event(cpu, data, size):
+    event = b["events"].event(data)
+    print("%-10s %-10d %-15lx %-10d %-10d %-10u %-10u %-10d %-10d" % (
+                                      strftime("%H:%M:%S"), 
+                                      event.pid,
+                                      event.s,
+                                      event.dev_max_batch,
+									  event.plugged,
+									  event.in_queue,
+									  event.in_flight,
+									  event.blocked,
+                                      event.event_type
+                                       )
+          )
+
+b["events"].open_perf_buffer(print_event)
+while 1:
+    try:
+        b.perf_buffer_poll()
+    except KeyboardInterrupt:
+        exit()
