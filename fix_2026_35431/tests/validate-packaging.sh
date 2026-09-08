@@ -49,7 +49,7 @@ require_text cve-31431-mitigate.spec "Release:        1.%{kernel_evr_tag}%{?dist
 require_text cve-31431-mitigate.spec "ExclusiveArch:  x86_64"
 require_text cve-31431-mitigate.spec "BuildRequires:  kernel-devel = %{kernel_evr}"
 require_text cve-31431-mitigate.spec "Requires:       kernel = %{kernel_evr}"
-require_text cve-31431-mitigate.spec "6.6.0-jdcloud*.x86_64"
+require_text cve-31431-mitigate.spec "6.6.0-jdcloud*.x86_64|6.11.4-jdcloud*.x86_64"
 require_text cve-31431-mitigate.spec "weak-modules --add-modules --no-initramfs"
 require_text cve-31431-mitigate.spec "weak-modules --remove-modules --no-initramfs"
 require_text cve-31431-mitigate.spec "/usr/lib/modules-load.d/"

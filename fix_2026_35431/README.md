@@ -8,7 +8,7 @@ The first release is intentionally limited to:
 
 - openEuler 24.03 LTS
 - x86_64
-- `6.6.0-jdcloud*` kernels
+- `6.6.0-jdcloud*` and `6.11.4-jdcloud*` kernels
 
 The implementation reads the second function argument from the x86_64
 register state. Do not build or load it on another architecture.
